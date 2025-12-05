@@ -15,7 +15,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Restore
-      run: dotnet restore VeriphiTestApp.sln
+      run: dotnet restore API.sln
 
     - name: build API
       run: dotnet build API/API.csproj -c Release
