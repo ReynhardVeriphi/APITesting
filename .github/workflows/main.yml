@@ -1,0 +1,40 @@
+name: Testing API workflows
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4
+
+    - name: Restore
+      run: dotnet restore VeriphiTestApp.sln
+
+    - name: build API
+      run: dotnet build API/API.csproj -c Release
+
+    - name: Start API (background)
+      working-directory: API
+      shell: pwsh
+      env:
+        ASPNETCORE_ENVIRONMENT: Development
+      run: |
+        $env:ASPNETCORE_URLS = "http://localhost:5275"
+        Start-Process -FilePath "dotnet" -ArgumentList "run --no-build --launch-profile http" -NoNewWindow
+        # Wait for readiness
+        $maxRetries = 30
+        for ($i=0; $i -lt $maxRetries; $i++) {
+          try {
+            $resp = Invoke-WebRequest -Uri "http://localhost:5275/health" -UseBasicParsing -TimeoutSec 2
+            if ($resp.StatusCode -eq 200) { break }
+          } catch { Start-Sleep -Seconds 1 }
+        }
+        
+    
