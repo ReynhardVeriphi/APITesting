@@ -22,7 +22,7 @@ jobs:
 
     - name: Start API (background)
       working-directory: API
-      shell: pwsh
+      shell: bash
       env:
         ASPNETCORE_ENVIRONMENT: Development
       run: |
