@@ -26,18 +26,22 @@ jobs:
       env:
         ASPNETCORE_ENVIRONMENT: Development
       run: |
-        $env:ASPNETCORE_URLS = "http://localhost:5275"
-        Start-Process -FilePath "dotnet" -ArgumentList "run --no-build --launch-profile http --configuration Release" -NoNewWindow
+        export ASPNETCORE_URLS = "http://localhost:5275"
+        dotnet run --no-build --configuration Release
 
-    - name: Wait for ready
+    - name: Wait for API readiness
+      shell: bash
       run: |
-         # Wait for readiness
-          $maxRetries = 30
-          for ($i=0; $i -lt $maxRetries; $i++) {
-            try {
-              $resp = Invoke-WebRequest -Uri "http://localhost:5275/health" -UseBasicParsing -TimeoutSec 2
-              if ($resp.StatusCode -eq 200) { break }
-            } catch { Start-Sleep -Seconds 1 }
-          }
-        
+        set -e
+        BASE_URL="http://localhost:5275/health"
+        for i in {1..30}; do
+          if curl -fsS "$BASE_URL" > /dev/null 2>&1; then
+            echo "API is ready on $BASE_URL"
+            exit 0
+          fi
+          echo "Waiting for API... attempt $i"
+          sleep 1
+        done
+        echo "API did not become ready in time"
+        exit 1
     
