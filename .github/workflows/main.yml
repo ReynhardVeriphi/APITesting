@@ -25,14 +25,16 @@ jobs:
       shell: bash
       env:
         ASPNETCORE_ENVIRONMENT: Development
+        ASPNETCORE_URLS: http://localhost:5275
       run: |
-        export ASPNETCORE_URLS = "http://localhost:5275"
-        dotnet run --no-build --configuration Release
+        set -euo pipefail
+        nohup dotnet run --no-build --configuration Release > api.out 2>&1 & echo $! > api.pid
+        echo "API started with PID $(cat api.pid)"
 
     - name: Wait for API readiness
       shell: bash
       run: |
-        set -e
+        set -euo pipefail
         BASE_URL="http://localhost:5275/health"
         for i in {1..30}; do
           if curl -fsS "$BASE_URL" > /dev/null 2>&1; then
@@ -43,5 +45,17 @@ jobs:
           sleep 1
         done
         echo "API did not become ready in time"
+        echo "Recent API logs:"
+        tail -n 200 API/api.out || true
         exit 1
-    
+
+    - name: Stop API
+      if: always()
+      working-directory: API
+      shell: bash
+      run: |
+        if [ -f api.pid ]; then
+          PID=$(cat api.pid)
+          echo "Stopping API (PID $PID)"
+          kill "$PID" || true
+        fi
