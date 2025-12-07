@@ -28,13 +28,16 @@ jobs:
       run: |
         $env:ASPNETCORE_URLS = "http://localhost:5275"
         Start-Process -FilePath "dotnet" -ArgumentList "run --no-build --launch-profile http --configuration Release" -NoNewWindow
-        # Wait for readiness
-        $maxRetries = 30
-        for ($i=0; $i -lt $maxRetries; $i++) {
-          try {
-            $resp = Invoke-WebRequest -Uri "http://localhost:5275/health" -UseBasicParsing -TimeoutSec 2
-            if ($resp.StatusCode -eq 200) { break }
-          } catch { Start-Sleep -Seconds 1 }
-        }
+
+    - name: Wait for ready
+      run: |
+         # Wait for readiness
+          $maxRetries = 30
+          for ($i=0; $i -lt $maxRetries; $i++) {
+            try {
+              $resp = Invoke-WebRequest -Uri "http://localhost:5275/health" -UseBasicParsing -TimeoutSec 2
+              if ($resp.StatusCode -eq 200) { break }
+            } catch { Start-Sleep -Seconds 1 }
+          }
         
     
